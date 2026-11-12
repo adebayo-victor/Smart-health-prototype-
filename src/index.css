@@ -12,4 +12,10 @@
 body {
   background-color: var(--color-surface-light);
   color: var(--color-slate-dark);
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Custom animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
