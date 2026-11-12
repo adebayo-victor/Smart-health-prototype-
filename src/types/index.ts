@@ -37,8 +37,6 @@ export interface HealthState {
   encounters: Encounter[];
   isOnline: boolean;
   setIsOnline: (online: boolean) => void;
-  addEncounter: (encounter: Omit<Encounter, 'id' | 'timestamp'>) => Promise<void>;
+  addEncounter: (encounter: Omit<Encounter, 'id' | 'timestamp'>) => Promise<string>; // Returns ID
   updateEncounter: (id: string, updates: Partial<Encounter>) => Promise<void>;
-  getEncounterById: (id: string) => Encounter | undefined;
-  loadEncounters: () => Promise<void>;
 }
