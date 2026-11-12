@@ -1,109 +1,101 @@
-import { useState } from 'react';
-import StartPage from './pages/StartPage.tsx';
-import WorkerLogin from './pages/WorkerLogin.tsx';
-import WorkerDashboard from './pages/WorkerDashboard.tsx';
-import { ArrowLeft, User, CheckCircle2 } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { TranslationResponse } from '@/types';
 
-import MedicalTranslator from './pages/MedicalTranslator.tsx';
-import { SixPartAIResponse } from './types/translator.ts';
+export type TranslatorStatus = 'idle' | 'recording' | 'processing' | 'reviewing' | 'completed';
 
-export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<'start' | 'worker-login' | 'worker-dashboard' | 'translator' | 'patient'>('start');
-  const [authenticatedWorkerId, setAuthenticatedWorkerId] = useState<string>('');
-  const [lastEncounterData, setLastEncounterData] = useState<SixPartAIResponse | null>(null);
-
-  // Screen: Worker Login
-  if (currentScreen === 'worker-login') {
-    return (
-      <WorkerLogin
-        onBack={() => setCurrentScreen('start')}
-        onLogin={(workerId) => {
-          setAuthenticatedWorkerId(workerId);
-          setCurrentScreen('worker-dashboard');
-        }}
-      />
-    );
-  }
-
-  // Screen: Medical Translator
-  if (currentScreen === 'translator') {
-    return (
-      <MedicalTranslator
-        onBack={() => setCurrentScreen('worker-dashboard')}
-        onSaveEncounter={(data) => {
-          setLastEncounterData(data);
-          alert(`Encounter Saved Locally (Offline Queue):\nPatient vitals (Temp: ${data.vitals.temperature_c}°C, BP: ${data.vitals.systolic_bp}/${data.vitals.diastolic_bp}) stored.`);
-          setCurrentScreen('worker-dashboard');
-        }}
-        onRunDiagnosis={(data) => {
-          setLastEncounterData(data);
-          alert(`Running Clinical Diagnosis Engine for ${data.dialect} patient statement...\nPrimary Vitals: ${data.vitals.temperature_c}°C, SpO2: ${data.vitals.spo2_percent}%`);
-        }}
-        onAutoReferral={(data) => {
-          setLastEncounterData(data);
-          alert(`Generating Emergency Referral Pass:\nHigh urgency detected (Temp: ${data.vitals.temperature_c}°C, Heart Rate: ${data.vitals.heart_rate_bpm} bpm). Destination center notified.`);
-        }}
-      />
-    );
-  }
-
-  // Screen: Worker Dashboard
-  if (currentScreen === 'worker-dashboard') {
-    return (
-      <WorkerDashboard
-        workerName="CHEW Amina Bello"
-        workerId={authenticatedWorkerId || '4092'}
-        centerName="Odeda Primary Healthcare Centre"
-        onNavigate={(screen) => {
-          if (screen === 'translator') {
-            setCurrentScreen('translator');
-          } else if (screen === 'home') {
-            setCurrentScreen('worker-dashboard');
-          } else {
-            console.log(`Navigating to ${screen}`);
-          }
-        }}
-        onEncounterClick={(encounterId) => {
-          alert(`Opening Encounter: ${encounterId}\nPatient record and vitals loaded.`);
-        }}
-      />
-    );
-  }
-
-  // Screen: Patient Mode
-  if (currentScreen === 'patient') {
-    return (
-      <div className="min-h-screen bg-[var(--color-surface-light)] text-[var(--color-slate-dark)] flex flex-col items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl p-6 shadow-sm text-center">
-          <div className="w-14 h-14 rounded-full bg-sky-50 text-[var(--color-sky-blue)] flex items-center justify-center mx-auto mb-4">
-            <User className="w-7 h-7" />
-          </div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 mb-3">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Patient Mode Active
-          </span>
-          <h2 className="text-xl font-bold text-slate-900">Patient Care & Chat Ready</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Multilingual symptom assistance, health advice, and triage chat will appear here.
-          </p>
-          <button
-            type="button"
-            onClick={() => setCurrentScreen('start')}
-            className="mt-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Start Page
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Default: Start Screen
-  return (
-    <StartPage
-      onProceedAsWorker={() => setCurrentScreen('worker-login')}
-      onProceedAsPatient={() => setCurrentScreen('patient')}
-    />
-  );
+export interface UseMedicalTranslatorReturn {
+  status: TranslatorStatus;
+  instruction: string;
+  extractedData: TranslationResponse | null;
+  confirmations: Record<string, boolean>;
+  
+  setInstruction: (text: string) => void;
+  playInstruction: () => Promise<void>;
+  startRecording: () => void;
+  stopRecording: () => void;
+  processTranslation: () => Promise<void>;
+  toggleConfirmation: (key: string) => void;
+  reset: () => void;
 }
 
+export function useMedicalTranslator(): UseMedicalTranslatorReturn {
+  const [status, setStatus] = useState<TranslatorStatus>('idle');
+  const [instruction, setInstruction] = useState('');
+  const [extractedData, setExtractedData] = useState<TranslationResponse | null>(null);
+  const [confirmations, setConfirmations] = useState<Record<string, boolean>>({
+    dialect: false,
+    statement: false,
+    translation: false,
+    vitals: false,
+    conclusion: false,
+  });
 
+  // Mock TTS Playback
+  const playInstruction = useCallback(async () => {
+    if (!instruction) return;
+    // In production: call backend /api/v1/translator/tts and play audio
+    console.log('Playing instruction via edge-tts:', instruction);
+    await new Promise(resolve => setTimeout(resolve, 2000)); 
+  }, [instruction]);
+
+  const startRecording = useCallback(() => {
+    setStatus('recording');
+    // In production: initialize MediaRecorder API here
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    // In production: stop MediaRecorder and store blob
+    setStatus('idle'); 
+  }, []);
+
+  // Mock STT + LLM Pipeline
+  const processTranslation = useCallback(async () => {
+    setStatus('processing');
+    
+    // Simulate API latency (Groq STT + LiteLLM LLM)
+    await new Promise(resolve => setTimeout(resolve, 2500));
+
+    // Mock successful response
+    const mockResponse: TranslationResponse = {
+      dialect: 'Hausa',
+      statement: 'Ina jin zazzabi da ciwon kai tun jiya.',
+      translation: 'I have been experiencing fever and headache since yesterday.',
+      vitals: { temp: 38.8, bp_sys: 120, bp_dia: 80, spo2: 97, heart_rate: 88 },
+      conclusion: 'Patient presents with acute febrile illness. Rule out malaria and viral infection.',
+      source: 'Nigerian Standard Treatment Guidelines (NSTG)'
+    };
+
+    setExtractedData(mockResponse);
+    setStatus('reviewing');
+  }, []);
+
+  const toggleConfirmation = useCallback((key: string) => {
+    setConfirmations(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }, []);
+
+  const reset = useCallback(() => {
+    setStatus('idle');
+    setInstruction('');
+    setExtractedData(null);
+    setConfirmations({
+      dialect: false, statement: false, translation: false, vitals: false, conclusion: false
+    });
+  }, []);
+
+  return {
+    status,
+    instruction,
+    extractedData,
+    confirmations,
+    setInstruction,
+    playInstruction,
+    startRecording,
+    stopRecording,
+    processTranslation,
+    toggleConfirmation,
+    reset
+  };
+}
