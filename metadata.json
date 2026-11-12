@@ -1,0 +1,7 @@
+{
+  "name": "SmartHealth AI PWA",
+  "description": "Offline-first clinical support and patient healthcare assistant for Nigerian communities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
