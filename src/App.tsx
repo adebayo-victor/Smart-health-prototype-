@@ -11,70 +11,24 @@ type AppView = 'start' | 'login' | 'dashboard' | 'translator' | 'diagnosis' | 't
 
 export default function App() {
   const [currentView, setCurrentView] = useState<AppView>('start');
-  const [workerId, setWorkerId] = useState<string>('');
+  const [activeEncounterId, setActiveEncounterId] = useState<string | undefined>(undefined);
 
-  // Navigation Helpers
   const navigate = (view: AppView) => setCurrentView(view);
   const goBack = () => {
+    setActiveEncounterId(undefined);
     if (currentView === 'login') navigate('start');
-    else if (['translator', 'diagnosis', 'triage', 'referral'].includes(currentView)) navigate('dashboard');
+    else navigate('dashboard');
   };
 
-  // Render Logic
   return (
     <div className="min-h-screen bg-[var(--color-surface-light)] text-[var(--color-slate-dark)] font-sans antialiased">
-      
-      {/* --- AUTH FLOW --- */}
-      {currentView === 'start' && (
-        <StartPage 
-          onProceedAsWorker={() => navigate('login')} 
-          onProceedAsUser={() => alert('User Face (Patient Chat) coming soon!')} 
-        />
-      )}
-
-      {currentView === 'login' && (
-        <WorkerLogin 
-          onBack={() => navigate('start')} 
-          onLogin={(id) => { setWorkerId(id); navigate('dashboard'); }} 
-        />
-      )}
-
-      {/* --- WORKER DASHBOARD --- */}
-      {currentView === 'dashboard' && (
-        <WorkerDashboard 
-          onNavigate={(widget) => {
-            if (widget === 'translator') navigate('translator');
-            if (widget === 'diagnosis') navigate('diagnosis');
-            if (widget === 'triage') navigate('triage');
-            if (widget === 'referral') navigate('referral');
-          }}
-          onViewEncounter={(id) => console.log('Viewing encounter:', id)} 
-        />
-      )}
-
-      {/* --- CLINICAL WORKFLOWS (Full Screen, No Bottom Nav) --- */}
-      {currentView === 'translator' && (
-        <MedicalTranslator 
-          onBack={goBack} 
-          onRunDiagnosis={(data) => { console.log('Passing to diagnosis:', data); navigate('diagnosis'); }}
-          onAutoReferral={(data) => { console.log('Auto referring:', data); navigate('referral'); }}
-        />
-      )}
-
-      {currentView === 'diagnosis' && (
-        <Diagnosis onBack={goBack} />
-      )}
-
-      {currentView === 'triage' && (
-        <OfflineTriage />
-        {/* Note: Add a back button to OfflineTriage component if needed, or wrap in a layout */}
-      )}
-
-      {currentView === 'referral' && (
-        <Referral />
-        {/* Note: Add a back button to Referral component if needed */}
-      )}
-
+      {currentView === 'start' && <StartPage onProceedAsWorker={() => navigate('login')} onProceedAsUser={() => alert('User Face coming soon!')} />}
+      {currentView === 'login' && <WorkerLogin onBack={() => navigate('start')} onLogin={() => navigate('dashboard')} />}
+      {currentView === 'dashboard' && <WorkerDashboard onNavigate={(w) => { if(w==='translator') navigate('translator'); if(w==='diagnosis') navigate('diagnosis'); if(w==='triage') navigate('triage'); if(w==='referral') navigate('referral'); }} onViewEncounter={(id) => { setActiveEncounterId(id); navigate('diagnosis'); }} />}
+      {currentView === 'translator' && <MedicalTranslator onBack={goBack} onRunDiagnosis={(id) => { setActiveEncounterId(id); navigate('diagnosis'); }} onAutoReferral={(id) => { setActiveEncounterId(id); navigate('referral'); }} />}
+      {currentView === 'diagnosis' && <Diagnosis onBack={goBack} encounterId={activeEncounterId} />}
+      {currentView === 'triage' && <OfflineTriage />}
+      {currentView === 'referral' && <Referral onBack={goBack} encounterId={activeEncounterId} />}
     </div>
   );
 }
