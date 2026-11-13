@@ -7,10 +7,13 @@ export function useMedicalTranslator() {
   const [status, setStatus] = useState<TranslatorStatus>('idle');
   const [instruction, setInstruction] = useState('');
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioFileName, setAudioFileName] = useState<string>('');
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [extractedData, setExtractedData] = useState<TranslationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmations, setConfirmations] = useState<Record<string, boolean>>({ dialect: false, statement: false, translation: false, vitals: false, conclusion: false });
+  const [confirmations, setConfirmations] = useState<Record<string, boolean>>({ 
+    dialect: false, statement: false, translation: false, vitals: false, conclusion: false 
+  });
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -26,7 +29,7 @@ export function useMedicalTranslator() {
   }, [instruction]);
 
   const startRecording = useCallback(async () => {
-    setError(null); setAudioBlob(null); setExtractedData(null);
+    setError(null); setAudioBlob(null); setAudioFileName(''); setExtractedData(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
@@ -35,9 +38,11 @@ export function useMedicalTranslator() {
       mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       mediaRecorder.onstop = () => {
         setAudioBlob(new Blob(chunksRef.current, { type: 'audio/webm' }));
+        setAudioFileName('recorded_audio.webm');
         stream.getTracks().forEach(t => t.stop());
         if (timerRef.current) clearInterval(timerRef.current);
         setRecordingDuration(0);
+        setStatus('idle');
       };
       mediaRecorder.start();
       setStatus('recording');
@@ -48,18 +53,28 @@ export function useMedicalTranslator() {
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-      setStatus('idle');
     }
   }, []);
 
+  // NEW: Handle File Upload
+  const handleFileUpload = useCallback((file: File) => {
+    setError(null);
+    setExtractedData(null);
+    setAudioBlob(new Blob([file], { type: file.type }));
+    setAudioFileName(file.name);
+    setStatus('idle'); // Ready to process
+  }, []);
+
   const processTranslation = useCallback(async () => {
-    if (!audioBlob) { setError('No audio recorded.'); return; }
+    if (!audioBlob) { setError('No audio provided. Please record or upload a file.'); return; }
     setStatus('processing'); setError(null);
     try {
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'patient_recording.webm');
+      formData.append('audio', audioBlob, audioFileName || 'patient_audio.webm');
+      
       const response = await fetch('/api/v1/translator/process', { method: 'POST', body: formData });
       if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+      
       const data: TranslationResponse = await response.json();
       setExtractedData(data);
       setStatus('reviewing');
@@ -67,10 +82,18 @@ export function useMedicalTranslator() {
       setError(err.message || 'Failed to process audio. Check backend.');
       setStatus('error');
     }
-  }, [audioBlob]);
+  }, [audioBlob, audioFileName]);
 
   const toggleConfirmation = useCallback((key: string) => setConfirmations(p => ({ ...p, [key]: !p[key] })), []);
-  const reset = useCallback(() => { setStatus('idle'); setInstruction(''); setAudioBlob(null); setExtractedData(null); setError(null); setRecordingDuration(0); setConfirmations({ dialect: false, statement: false, translation: false, vitals: false, conclusion: false }); }, []);
+  
+  const reset = useCallback(() => { 
+    setStatus('idle'); setInstruction(''); setAudioBlob(null); setAudioFileName(''); 
+    setExtractedData(null); setError(null); setRecordingDuration(0); 
+    setConfirmations({ dialect: false, statement: false, translation: false, vitals: false, conclusion: false }); 
+  }, []);
 
-  return { status, instruction, audioBlob, recordingDuration, extractedData, error, confirmations, setInstruction, playInstruction, startRecording, stopRecording, processTranslation, toggleConfirmation, reset };
+  return { 
+    status, instruction, audioBlob, audioFileName, recordingDuration, extractedData, error, confirmations, 
+    setInstruction, playInstruction, startRecording, stopRecording, handleFileUpload, processTranslation, toggleConfirmation, reset 
+  };
 }
