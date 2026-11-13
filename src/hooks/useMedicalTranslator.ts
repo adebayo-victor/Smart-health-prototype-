@@ -11,9 +11,7 @@ export function useMedicalTranslator() {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [extractedData, setExtractedData] = useState<TranslationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirmations, setConfirmations] = useState<Record<string, boolean>>({ 
-    dialect: false, statement: false, translation: false, vitals: false, conclusion: false 
-  });
+  const [confirmations, setConfirmations] = useState<Record<string, boolean>>({ dialect: false, statement: false, translation: false, vitals: false, conclusion: false });
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -71,10 +69,8 @@ export function useMedicalTranslator() {
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, audioFileName || 'patient_audio.webm');
-      
       const response = await fetch('/api/v1/translator/process', { method: 'POST', body: formData });
       if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-      
       const data: TranslationResponse = await response.json();
       setExtractedData(data);
       setStatus('reviewing');
