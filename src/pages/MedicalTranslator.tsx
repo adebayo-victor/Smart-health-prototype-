@@ -31,14 +31,12 @@ export default function MedicalTranslator({ onBack, onRunDiagnosis, onAutoReferr
       </div>
 
       <div className="p-6 space-y-6 max-w-2xl mx-auto">
-        {/* Step 1: Instruction */}
         <div className="space-y-3">
           <h2 className="text-xs font-black uppercase text-slate-400">1. Worker Instruction</h2>
           <input value={hook.instruction} onChange={(e) => hook.setInstruction(e.target.value)} placeholder="e.g., Please say your name and what brings you here..." className="w-full min-h-12 px-4 rounded-xl border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-[var(--color-emerald)] focus:outline-none" />
           <button onClick={hook.playInstruction} disabled={!hook.instruction} className="w-full min-h-12 bg-[var(--color-sky-blue)] text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:bg-slate-300"><Play className="w-4 h-4 fill-white" /> Play Instruction</button>
         </div>
 
-        {/* Step 2: Capture Audio (Record OR Upload) */}
         <div className="space-y-3">
           <h2 className="text-xs font-black uppercase text-slate-400">2. Patient Audio Input</h2>
           
@@ -70,17 +68,16 @@ export default function MedicalTranslator({ onBack, onRunDiagnosis, onAutoReferr
           {/* Audio Loaded State */}
           {hook.audioBlob && hook.status !== 'recording' && (
             <div className="p-4 bg-emerald-50 border border-[var(--color-emerald)] rounded-xl flex items-center gap-3 animate-fade-in">
-              <FileAudio className="w-8 h-8 text-[var(--color-emerald)]" />
+              <FileAudio className="w-8 h-8 text-[var(--color-emerald)] shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-[var(--color-slate-dark)] truncate">{hook.audioFileName || 'Recorded Audio'}</p>
                 <p className="text-xs text-slate-600">{(hook.audioBlob.size / 1024).toFixed(1)} KB • Ready to process</p>
               </div>
-              <button onClick={hook.reset} className="text-xs font-bold text-red-600 hover:underline">Clear</button>
+              <button onClick={hook.reset} className="text-xs font-bold text-red-600 hover:underline shrink-0">Clear</button>
             </div>
           )}
         </div>
 
-        {/* Step 3: Translate & Extract */}
         {hook.audioBlob && hook.status !== 'recording' && hook.status !== 'processing' && (
           <button onClick={hook.processTranslation} className="w-full min-h-14 bg-[var(--color-slate-dark)] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition">Translate & Extract Data</button>
         )}
@@ -88,7 +85,6 @@ export default function MedicalTranslator({ onBack, onRunDiagnosis, onAutoReferr
         {hook.status === 'processing' && <div className="flex items-center justify-center gap-2 py-6 text-[var(--color-emerald)] bg-emerald-50 rounded-xl"><Loader2 className="w-5 h-5 animate-spin" /><span className="font-bold">Transcribing (Groq) & Extracting (LiteLLM)...</span></div>}
         {hook.error && <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700"><AlertCircle className="w-5 h-5" /><span className="font-bold text-sm">{hook.error}</span></div>}
 
-        {/* Step 4: Extracted Data */}
         {hook.extractedData && (
           <div className="space-y-4 animate-fade-in">
             <h2 className="text-xs font-black uppercase text-slate-400">3. Extracted Data (Confirm Accuracy)</h2>
@@ -108,7 +104,6 @@ export default function MedicalTranslator({ onBack, onRunDiagnosis, onAutoReferr
         )}
       </div>
 
-      {/* Sticky Footer Actions */}
       {hook.extractedData && hook.status === 'reviewing' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 flex gap-2 shadow-2xl">
           <button onClick={onBack} className="flex-1 min-h-12 bg-slate-200 text-slate-700 rounded-xl font-bold text-sm">Save & Exit</button>
